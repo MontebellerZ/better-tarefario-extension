@@ -1,0 +1,58 @@
+#better-tarefario-root {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  margin: 10px 0 14px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #dddddd);
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tarefario-tab-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tarefario-tab-button {
+  appearance: none;
+  border: 1px solid var(--color-border-strong, #d4d4d4);
+  background: transparent;
+  color: var(--color-text, #333333);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.tarefario-tab-button:hover {
+  background: var(--color-surface-soft, #f7f8fb);
+}
+
+.tarefario-tab-button.is-active {
+  border-color: transparent;
+  background: var(--color-gradient-main, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+  color: var(--color-text-on-primary, #ffffff);
+}
+
+@media (max-width: 640px) {
+  #better-tarefario-root {
+    top: 4px;
+    padding: 8px;
+  }
+
+  .tarefario-tab-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tarefario-tab-button {
+    width: 100%;
+    text-align: center;
+  }
+}
