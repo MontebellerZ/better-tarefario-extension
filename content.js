@@ -6,12 +6,14 @@
   const TAB_MEUS = "meus";
   const TAB_REVIEW = "review";
   const CARD_SELECTOR = "app-task-card";
+  const TASK_CARD_SELECTOR = ".task-card";
   const BADGE_SELECTOR = ".status-badge";
   const GRID_SELECTOR = ".tasks-grid";
 
   let activeTab = readSavedTab();
   let observer;
   let refreshPending = false;
+  let resizeListenerAttached = false;
 
   function readSavedTab() {
     const savedTab = window.localStorage.getItem(STORAGE_KEY);
@@ -87,6 +89,53 @@
     });
   }
 
+  function resetCardHeights(cards) {
+    cards.forEach((card) => {
+      const taskCard = card.querySelector(TASK_CARD_SELECTOR);
+      if (taskCard) {
+        taskCard.style.height = "";
+      }
+    });
+  }
+
+  function alignCardsByRow(cards) {
+    const cardsList = cards || getCards();
+    resetCardHeights(cardsList);
+
+    const visibleCards = cardsList.filter(
+      (card) => card.style.display !== "none" && card.offsetParent !== null
+    );
+
+    if (!visibleCards.length) {
+      return;
+    }
+
+    const rowsMap = new Map();
+
+    visibleCards.forEach((card) => {
+      const taskCard = card.querySelector(TASK_CARD_SELECTOR);
+      if (!taskCard) {
+        return;
+      }
+
+      const rowTop = Math.round(card.getBoundingClientRect().top);
+      const rowCards = rowsMap.get(rowTop) || [];
+      rowCards.push(taskCard);
+      rowsMap.set(rowTop, rowCards);
+    });
+
+    rowsMap.forEach((rowCards) => {
+      let maxHeight = 0;
+      rowCards.forEach((taskCard) => {
+        maxHeight = Math.max(maxHeight, taskCard.offsetHeight);
+      });
+
+      rowCards.forEach((taskCard) => {
+        taskCard.style.height = `${maxHeight}px`;
+      });
+    });
+  }
+
   function applyCardFilter() {
     const cards = getCards();
     cards.forEach((card) => {
@@ -94,6 +143,7 @@
     });
 
     updateCounters(cards);
+    alignCardsByRow(cards);
   }
 
   function setActiveTab(tab) {
@@ -182,10 +232,20 @@
     });
   }
 
+  function startResizeListener() {
+    if (resizeListenerAttached) {
+      return;
+    }
+
+    window.addEventListener("resize", scheduleRefresh);
+    resizeListenerAttached = true;
+  }
+
   function bootstrap(attempt = 0) {
     if (ensureTabsRoot()) {
       applyCardFilter();
       startObserver();
+      startResizeListener();
       return;
     }
 

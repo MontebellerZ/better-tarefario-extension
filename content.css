@@ -39,6 +39,21 @@
   color: var(--color-text-on-primary, #ffffff);
 }
 
+.tasks-grid > app-task-card {
+  display: block;
+  height: 100%;
+}
+
+.tasks-grid > app-task-card > .task-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tasks-grid > app-task-card > .task-card .task-actions {
+  margin-top: auto;
+}
+
 @media (max-width: 640px) {
   #better-tarefario-root {
     top: 4px;
