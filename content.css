@@ -54,6 +54,93 @@
   margin-top: auto;
 }
 
+.tasks-grid > app-task-card > .task-card.tarefario-is-hidden {
+  box-shadow: 0 0 0 2px var(--color-warning, #ff9800), var(--shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.tasks-grid > app-task-card > .task-card.tarefario-fade-out {
+  pointer-events: none;
+  animation: tarefario-card-fade-out 220ms ease forwards;
+}
+
+@keyframes tarefario-card-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.tasks-grid > app-task-card > .task-card .status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-card-options {
+  position: relative;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-options-trigger {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted, #666666);
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-options-trigger:hover {
+  border-color: var(--color-border, #dddddd);
+  background: var(--color-surface-soft, #f7f8fb);
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-options-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  border: 1px solid var(--color-border, #dddddd);
+  border-radius: 10px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.15));
+  padding: 10px;
+  z-index: 35;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-card-options.is-open .tarefario-options-menu {
+  display: block;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-hidden-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text, #333333);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tasks-grid > app-task-card > .task-card .status-group .tarefario-hidden-option .tarefario-hidden-checkbox {
+  width: 14px;
+  height: 14px;
+}
+
 @media (max-width: 640px) {
   #better-tarefario-root {
     top: 4px;
@@ -63,7 +150,7 @@
   .tarefario-tab-buttons {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .tarefario-tab-button {
