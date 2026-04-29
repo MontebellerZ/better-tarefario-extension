@@ -7,6 +7,7 @@
   const TAB_REVIEW = "review";
   const CARD_SELECTOR = "app-task-card";
   const TASK_CARD_SELECTOR = ".task-card";
+  const PRIORITY_TEXT_SELECTOR = ".task-meta .meta-text";
   const BADGE_SELECTOR = ".status-badge";
   const GRID_SELECTOR = ".tasks-grid";
 
@@ -136,8 +137,59 @@
     });
   }
 
+  function getPriorityValue(card) {
+    const priorityMatch = Array.from(card.querySelectorAll(PRIORITY_TEXT_SELECTOR))
+      .map((item) => (item.textContent || "").trim())
+      .map((text) => text.match(/^P(\d+)$/i))
+      .find(Boolean);
+
+    if (!priorityMatch) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const priorityValue = Number.parseInt(priorityMatch[1], 10);
+    if (Number.isNaN(priorityValue)) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return priorityValue;
+  }
+
+  function sortCardsByPriority(cards) {
+    const grid = document.querySelector(GRID_SELECTOR);
+    const cardsList = cards || getCards();
+
+    if (!grid || !cardsList.length) {
+      return cardsList;
+    }
+
+    const sortedCards = cardsList
+      .map((card, index) => ({
+        card,
+        index,
+        priority: getPriorityValue(card)
+      }))
+      .sort((left, right) => {
+        if (left.priority !== right.priority) {
+          return left.priority - right.priority;
+        }
+
+        return left.index - right.index;
+      })
+      .map((entry) => entry.card);
+
+    const isSameOrder = cardsList.every((card, index) => card === sortedCards[index]);
+    if (!isSameOrder) {
+      const fragment = document.createDocumentFragment();
+      sortedCards.forEach((card) => fragment.appendChild(card));
+      grid.appendChild(fragment);
+    }
+
+    return sortedCards;
+  }
+
   function applyCardFilter() {
-    const cards = getCards();
+    const cards = sortCardsByPriority();
     cards.forEach((card) => {
       card.style.display = shouldShowCard(card) ? "" : "none";
     });
