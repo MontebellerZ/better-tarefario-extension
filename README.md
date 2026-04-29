@@ -11,6 +11,11 @@ com checkbox para ocultar ou remover o status de oculto.
 Os cards ocultos ficam salvos no localStorage e continuam marcados apos recarregar a pagina.
 Quando um card e marcado como oculto, ele deixa de aparecer na aba Meus com animacao de saida.
 
+Na tela de apontamentos (https://tarefario.dtigab.com.br/apontamentos), a extensao
+adiciona um botao Transferir para ponto no canto direito dos filtros. Esse botao abre
+um modal com o mesmo fluxo da extensao de transferencia, permitindo informar matricula,
+senha e competencia para executar a transferencia automatica para o sistema de ponto.
+
 ## Como instalar (modo desenvolvedor)
 
 1. Abra o navegador:
@@ -27,6 +32,13 @@ Quando um card e marcado como oculto, ele deixa de aparecer na aba Meus com anim
 3. Clique em Meus, Code Review ou Ocultos para alternar a visualizacao.
 4. Em cada card, clique no icone de 3 bolinhas ao lado do status.
 5. No menu flutuante, marque o checkbox Ocultar para adicionar na aba Ocultos.
+
+## Uso na tela de apontamentos
+
+1. Acesse https://tarefario.dtigab.com.br/apontamentos.
+2. Clique em Transferir para ponto, no canto direito da area de filtros.
+3. Preencha matricula, senha do ponto e competencia.
+4. Clique em Transferir para executar o fluxo automatizado.
 
 ## Observacoes tecnicas
 

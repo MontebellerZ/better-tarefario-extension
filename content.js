@@ -22,12 +22,39 @@
   const BADGE_SELECTOR = ".status-badge";
   const GRID_SELECTOR = ".tasks-grid";
 
+  const APONTAMENTOS_PATH_PREFIX = "/apontamentos";
+  const APONTAMENTOS_FILTER_SELECTOR = ".time-entries-filter";
+  const APONTAMENTOS_TRANSFER_SLOT_ID = "better-tarefario-transfer-slot";
+  const APONTAMENTOS_TRANSFER_BUTTON_ID = "better-tarefario-transfer-button";
+  const APONTAMENTOS_MODAL_ROOT_ID = "better-tarefario-transfer-modal-root";
+
+  const USERNAME_STORAGE_KEY = "savedUsername";
+  const PERIOD_STORAGE_KEY = "selectedCompetency";
+  const SAVED_PASSWORD_STORAGE_KEY = "savedPassword";
+  const REMEMBER_PASSWORD_STORAGE_KEY = "rememberPassword";
+  const MONTH_NAMES = [
+    "Janeiro",
+    "Fevereiro",
+    "Marco",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro"
+  ];
+
   let activeTab = readSavedTab();
   let hiddenCardIds = readHiddenCardIds();
   let observer;
   let refreshPending = false;
   let resizeListenerAttached = false;
   let optionsListenersAttached = false;
+  let apontamentosObserver;
+  let transferModalRefs;
 
   function readSavedTab() {
     const savedTab = window.localStorage.getItem(STORAGE_KEY);
@@ -555,6 +582,351 @@
     resizeListenerAttached = true;
   }
 
+  function isApontamentosPage() {
+    return window.location.pathname.startsWith(APONTAMENTOS_PATH_PREFIX);
+  }
+
+  function formatCompetencyValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+
+  function buildCompetencyOptions() {
+    const now = new Date();
+    const options = [];
+
+    for (let offset = 0; offset < 12; offset += 1) {
+      const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const monthIndex = date.getMonth();
+      const year = date.getFullYear();
+
+      options.push({
+        value: formatCompetencyValue(date),
+        label: `${MONTH_NAMES[monthIndex]} de ${year}`
+      });
+    }
+
+    return options;
+  }
+
+  function populateCompetencyOptions(selectElement) {
+    if (!selectElement) {
+      return;
+    }
+
+    const options = buildCompetencyOptions();
+    selectElement.replaceChildren(
+      ...options.map(({ value, label }) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        return option;
+      })
+    );
+  }
+
+  function parsePeriodFromCompetency(value) {
+    const [year, month] = String(value || "").split("-");
+    return { year, month };
+  }
+
+  function setTransferStatus(message, type = "") {
+    if (!transferModalRefs?.statusEl) {
+      return;
+    }
+
+    transferModalRefs.statusEl.textContent = message;
+    transferModalRefs.statusEl.className = `better-transfer-status ${type}`.trim();
+  }
+
+  async function persistTransferPasswordSettings(password) {
+    if (!transferModalRefs) {
+      return;
+    }
+
+    if (transferModalRefs.rememberPasswordCheckbox.checked) {
+      await chrome.storage.local.set({
+        [REMEMBER_PASSWORD_STORAGE_KEY]: true,
+        [SAVED_PASSWORD_STORAGE_KEY]: password
+      });
+      return;
+    }
+
+    await chrome.storage.local.set({
+      [REMEMBER_PASSWORD_STORAGE_KEY]: false
+    });
+    await chrome.storage.local.remove(SAVED_PASSWORD_STORAGE_KEY);
+  }
+
+  async function restoreTransferFormValues() {
+    if (!transferModalRefs) {
+      return;
+    }
+
+    populateCompetencyOptions(transferModalRefs.competencySelect);
+
+    const stored = await chrome.storage.local.get([
+      USERNAME_STORAGE_KEY,
+      PERIOD_STORAGE_KEY,
+      SAVED_PASSWORD_STORAGE_KEY,
+      REMEMBER_PASSWORD_STORAGE_KEY
+    ]);
+
+    const defaultCompetency = transferModalRefs.competencySelect.options[0]?.value || "";
+    const savedCompetency = stored[PERIOD_STORAGE_KEY] || defaultCompetency;
+    const hasSavedCompetency = Array.from(transferModalRefs.competencySelect.options).some(
+      (option) => option.value === savedCompetency
+    );
+
+    transferModalRefs.usernameInput.value = stored[USERNAME_STORAGE_KEY] || "";
+    transferModalRefs.competencySelect.value = hasSavedCompetency ? savedCompetency : defaultCompetency;
+
+    const rememberPassword = Boolean(stored[REMEMBER_PASSWORD_STORAGE_KEY]);
+    transferModalRefs.rememberPasswordCheckbox.checked = rememberPassword;
+    transferModalRefs.passwordInput.value = rememberPassword ? stored[SAVED_PASSWORD_STORAGE_KEY] || "" : "";
+  }
+
+  function closeTransferModal() {
+    if (!transferModalRefs?.root) {
+      return;
+    }
+
+    transferModalRefs.root.classList.remove("is-open");
+  }
+
+  async function openTransferModal() {
+    ensureTransferModal();
+    await restoreTransferFormValues();
+    setTransferStatus("");
+
+    transferModalRefs.root.classList.add("is-open");
+    if (!transferModalRefs.usernameInput.value) {
+      transferModalRefs.usernameInput.focus();
+      return;
+    }
+
+    if (!transferModalRefs.passwordInput.value) {
+      transferModalRefs.passwordInput.focus();
+    }
+  }
+
+  async function handleTransferSubmit() {
+    if (!transferModalRefs) {
+      return;
+    }
+
+    const username = transferModalRefs.usernameInput.value.trim();
+    const password = transferModalRefs.passwordInput.value;
+    const competency = transferModalRefs.competencySelect.value;
+    const { month, year } = parsePeriodFromCompetency(competency);
+
+    if (!username) {
+      setTransferStatus("Informe a matricula para continuar.", "error");
+      transferModalRefs.usernameInput.focus();
+      return;
+    }
+
+    if (!password) {
+      setTransferStatus("Informe a senha do site do ponto para continuar.", "error");
+      transferModalRefs.passwordInput.focus();
+      return;
+    }
+
+    if (!month || !year) {
+      setTransferStatus("Selecione a competencia para continuar.", "error");
+      transferModalRefs.competencySelect.focus();
+      return;
+    }
+
+    transferModalRefs.transferBtn.disabled = true;
+    setTransferStatus("Processando dados e atualizando o sistema de ponto...");
+
+    try {
+      await chrome.storage.local.set({ [USERNAME_STORAGE_KEY]: username });
+      await chrome.storage.local.set({ [PERIOD_STORAGE_KEY]: competency });
+      await persistTransferPasswordSettings(password);
+
+      const response = await chrome.runtime.sendMessage({
+        type: "TRANSFER",
+        credentials: {
+          username,
+          password
+        },
+        period: {
+          month,
+          year
+        }
+      });
+
+      if (!response || !response.ok) {
+        throw new Error(response?.error || "Falha ao transferir dados.");
+      }
+
+      if (!transferModalRefs.rememberPasswordCheckbox.checked) {
+        transferModalRefs.passwordInput.value = "";
+      }
+
+      setTransferStatus(
+        `Dados processados: ${response.count || 0}. Grade lida: ${response.tableCount || 0}. Novos: ${response.newCount || 0}. Salvos: ${response.savedCount || 0}. Falhas: ${response.failedCount || 0}.`,
+        "success"
+      );
+    } catch (error) {
+      setTransferStatus(error?.message || "Erro inesperado.", "error");
+    } finally {
+      transferModalRefs.transferBtn.disabled = false;
+    }
+  }
+
+  function ensureTransferModal() {
+    if (transferModalRefs?.root && document.body.contains(transferModalRefs.root)) {
+      return transferModalRefs;
+    }
+
+    if (!document.body) {
+      return null;
+    }
+
+    let root = document.getElementById(APONTAMENTOS_MODAL_ROOT_ID);
+
+    if (!root) {
+      root = document.createElement("div");
+      root.id = APONTAMENTOS_MODAL_ROOT_ID;
+      root.className = "better-transfer-modal-root";
+      root.innerHTML = `
+        <div class="better-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="better-transfer-modal-title">
+          <div class="better-transfer-header">
+            <h2 id="better-transfer-modal-title">Transferir para Ponto</h2>
+            <button type="button" class="better-transfer-close" aria-label="Fechar">x</button>
+          </div>
+          <p class="better-transfer-description">Importa seus lancamentos do Tarefario, compara com o espelho do ponto e registra automaticamente somente as marcacoes pendentes.</p>
+
+          <label class="better-transfer-field" for="better-transfer-username">
+            <span>Matricula</span>
+            <input id="better-transfer-username" type="text" autocomplete="username" />
+          </label>
+
+          <label class="better-transfer-field" for="better-transfer-password">
+            <span>Senha do site do ponto</span>
+            <input id="better-transfer-password" type="password" autocomplete="current-password" />
+          </label>
+
+          <label class="better-transfer-check" for="better-transfer-remember-password">
+            <input id="better-transfer-remember-password" type="checkbox" />
+            <span>Lembrar senha neste navegador</span>
+          </label>
+
+          <label class="better-transfer-field" for="better-transfer-competency">
+            <span>Competencia</span>
+            <select id="better-transfer-competency"></select>
+          </label>
+
+          <div class="better-transfer-actions">
+            <button type="button" class="better-transfer-cancel">Cancelar</button>
+            <button type="button" class="better-transfer-submit">Transferir</button>
+          </div>
+
+          <p class="better-transfer-status" aria-live="polite"></p>
+        </div>
+      `;
+      document.body.appendChild(root);
+    }
+
+    transferModalRefs = {
+      root,
+      closeBtn: root.querySelector(".better-transfer-close"),
+      cancelBtn: root.querySelector(".better-transfer-cancel"),
+      transferBtn: root.querySelector(".better-transfer-submit"),
+      usernameInput: root.querySelector("#better-transfer-username"),
+      passwordInput: root.querySelector("#better-transfer-password"),
+      rememberPasswordCheckbox: root.querySelector("#better-transfer-remember-password"),
+      competencySelect: root.querySelector("#better-transfer-competency"),
+      statusEl: root.querySelector(".better-transfer-status")
+    };
+
+    transferModalRefs.closeBtn?.addEventListener("click", closeTransferModal);
+    transferModalRefs.cancelBtn?.addEventListener("click", closeTransferModal);
+    transferModalRefs.transferBtn?.addEventListener("click", handleTransferSubmit);
+
+    root.addEventListener("click", (event) => {
+      if (event.target === root) {
+        closeTransferModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && transferModalRefs?.root?.classList.contains("is-open")) {
+        closeTransferModal();
+      }
+    });
+
+    return transferModalRefs;
+  }
+
+  function ensureTransferButton() {
+    const filterContainer = document.querySelector(APONTAMENTOS_FILTER_SELECTOR);
+    if (!filterContainer) {
+      return false;
+    }
+
+    let slot = document.getElementById(APONTAMENTOS_TRANSFER_SLOT_ID);
+    if (!slot) {
+      slot = document.createElement("div");
+      slot.id = APONTAMENTOS_TRANSFER_SLOT_ID;
+      slot.className = "better-transfer-slot";
+      filterContainer.appendChild(slot);
+    }
+
+    if (!slot.querySelector(`#${APONTAMENTOS_TRANSFER_BUTTON_ID}`)) {
+      const button = document.createElement("button");
+      button.id = APONTAMENTOS_TRANSFER_BUTTON_ID;
+      button.type = "button";
+      button.className = "better-transfer-open-button";
+      button.textContent = "Transferir para ponto";
+      button.addEventListener("click", openTransferModal);
+      slot.appendChild(button);
+    }
+
+    return true;
+  }
+
+  function startApontamentosObserver() {
+    if (apontamentosObserver) {
+      apontamentosObserver.disconnect();
+    }
+
+    apontamentosObserver = new MutationObserver(() => {
+      if (!isApontamentosPage()) {
+        return;
+      }
+
+      ensureTransferButton();
+      ensureTransferModal();
+    });
+
+    apontamentosObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  function bootstrapApontamentos(attempt = 0) {
+    if (!isApontamentosPage()) {
+      return;
+    }
+
+    ensureTransferModal();
+
+    if (ensureTransferButton()) {
+      startApontamentosObserver();
+      return;
+    }
+
+    if (attempt < 80) {
+      window.setTimeout(() => bootstrapApontamentos(attempt + 1), 250);
+    }
+  }
+
   function bootstrap(attempt = 0) {
     if (ensureTabsRoot()) {
       applyCardFilter();
@@ -566,6 +938,11 @@
     if (attempt < 80) {
       window.setTimeout(() => bootstrap(attempt + 1), 250);
     }
+  }
+
+  if (isApontamentosPage()) {
+    bootstrapApontamentos();
+    return;
   }
 
   bootstrap();

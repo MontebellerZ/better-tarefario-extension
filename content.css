@@ -141,6 +141,174 @@
   height: 14px;
 }
 
+.time-entries-filter #better-tarefario-transfer-slot {
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+.time-entries-filter #better-tarefario-transfer-button {
+  border: none;
+  border-radius: 8px;
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-success, #4caf50);
+  color: var(--color-text-on-primary, #ffffff);
+  white-space: nowrap;
+}
+
+.time-entries-filter #better-tarefario-transfer-button:hover {
+  filter: brightness(1.06);
+}
+
+.better-transfer-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.better-transfer-modal-root.is-open {
+  display: flex;
+}
+
+.better-transfer-modal {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #dddddd);
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-modal, 0 20px 60px rgba(0, 0, 0, 0.3));
+  padding: 16px;
+}
+
+.better-transfer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.better-transfer-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-text, #333333);
+}
+
+.better-transfer-close {
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--color-surface-muted, #f0f0f0);
+  color: var(--color-text, #333333);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.better-transfer-description {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-muted, #666666);
+}
+
+.better-transfer-field {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.better-transfer-field > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted, #666666);
+}
+
+.better-transfer-field input,
+.better-transfer-field select {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--color-border, #dddddd);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #333333);
+}
+
+.better-transfer-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--color-text, #333333);
+}
+
+.better-transfer-check input {
+  margin: 0;
+}
+
+.better-transfer-actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.better-transfer-cancel,
+.better-transfer-submit {
+  border: none;
+  border-radius: 8px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.better-transfer-cancel {
+  background: var(--color-surface-muted, #f0f0f0);
+  color: var(--color-text, #333333);
+}
+
+.better-transfer-submit {
+  background: var(--color-primary, #667eea);
+  color: var(--color-text-on-primary, #ffffff);
+}
+
+.better-transfer-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.better-transfer-status {
+  margin: 10px 0 0;
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--color-text-muted, #666666);
+}
+
+.better-transfer-status.error {
+  color: var(--color-danger, #c33);
+}
+
+.better-transfer-status.success {
+  color: var(--color-success, #4caf50);
+}
+
 @media (max-width: 640px) {
   #better-tarefario-root {
     top: 4px;
@@ -156,5 +324,14 @@
   .tarefario-tab-button {
     width: 100%;
     text-align: center;
+  }
+
+  .time-entries-filter #better-tarefario-transfer-slot {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .time-entries-filter #better-tarefario-transfer-button {
+    width: 100%;
   }
 }

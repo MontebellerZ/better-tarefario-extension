@@ -2,7 +2,19 @@
   "manifest_version": 3,
   "name": "Better Tarefario",
   "version": "1.0.0",
-  "description": "Separa cards em duas abas: Meus e Code Review.",
+  "description": "Organiza cards e integra transferencia dos apontamentos para o site de ponto.",
+  "permissions": [
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://tarefario.dtigab.com.br/*",
+    "http://ponto4psg.aguiabranca.com.br/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
