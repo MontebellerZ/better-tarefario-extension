@@ -309,6 +309,61 @@
   color: var(--color-success, #4caf50);
 }
 
+.better-transfer-loading-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.better-transfer-loading-root.is-open {
+  display: flex;
+}
+
+.better-transfer-loading-card {
+  min-width: 280px;
+  max-width: min(92vw, 420px);
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #dddddd);
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-modal, 0 20px 60px rgba(0, 0, 0, 0.3));
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.better-transfer-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-border-subtle, #eeeeee);
+  border-top-color: var(--color-primary, #667eea);
+  border-radius: 50%;
+  animation: better-transfer-spin 0.8s linear infinite;
+  flex: 0 0 auto;
+}
+
+.better-transfer-loading-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text, #333333);
+}
+
+@keyframes better-transfer-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 640px) {
   #better-tarefario-root {
     top: 4px;

@@ -39,6 +39,7 @@ senha e competencia para executar a transferencia automatica para o sistema de p
 2. Clique em Transferir para ponto, no canto direito da area de filtros.
 3. Preencha matricula, senha do ponto e competencia.
 4. Clique em Transferir para executar o fluxo automatizado.
+5. Durante a execucao, um loading de tela cheia bloqueia a interface ate o termino da transferencia.
 
 ## Observacoes tecnicas
 

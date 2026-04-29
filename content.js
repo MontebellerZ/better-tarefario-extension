@@ -27,6 +27,7 @@
   const APONTAMENTOS_TRANSFER_SLOT_ID = "better-tarefario-transfer-slot";
   const APONTAMENTOS_TRANSFER_BUTTON_ID = "better-tarefario-transfer-button";
   const APONTAMENTOS_MODAL_ROOT_ID = "better-tarefario-transfer-modal-root";
+  const APONTAMENTOS_LOADING_ROOT_ID = "better-tarefario-transfer-loading-root";
 
   const USERNAME_STORAGE_KEY = "savedUsername";
   const PERIOD_STORAGE_KEY = "selectedCompetency";
@@ -55,6 +56,7 @@
   let optionsListenersAttached = false;
   let apontamentosObserver;
   let transferModalRefs;
+  let transferInProgress = false;
 
   function readSavedTab() {
     const savedTab = window.localStorage.getItem(STORAGE_KEY);
@@ -640,6 +642,43 @@
     transferModalRefs.statusEl.className = `better-transfer-status ${type}`.trim();
   }
 
+  function ensureTransferLoadingOverlay() {
+    if (!document.body) {
+      return null;
+    }
+
+    let loadingRoot = document.getElementById(APONTAMENTOS_LOADING_ROOT_ID);
+
+    if (!loadingRoot) {
+      loadingRoot = document.createElement("div");
+      loadingRoot.id = APONTAMENTOS_LOADING_ROOT_ID;
+      loadingRoot.className = "better-transfer-loading-root";
+      loadingRoot.setAttribute("aria-hidden", "true");
+      loadingRoot.innerHTML = `
+        <div class="better-transfer-loading-card" role="status" aria-live="polite" aria-atomic="true">
+          <div class="better-transfer-loading-spinner" aria-hidden="true"></div>
+          <p class="better-transfer-loading-text">Transferencia em andamento. Aguarde...</p>
+        </div>
+      `;
+
+      document.body.appendChild(loadingRoot);
+    }
+
+    return loadingRoot;
+  }
+
+  function setTransferLoading(isLoading) {
+    transferInProgress = isLoading;
+
+    const loadingRoot = ensureTransferLoadingOverlay();
+    if (!loadingRoot) {
+      return;
+    }
+
+    loadingRoot.classList.toggle("is-open", isLoading);
+    loadingRoot.setAttribute("aria-hidden", isLoading ? "false" : "true");
+  }
+
   async function persistTransferPasswordSettings(password) {
     if (!transferModalRefs) {
       return;
@@ -688,6 +727,10 @@
   }
 
   function closeTransferModal() {
+    if (transferInProgress) {
+      return;
+    }
+
     if (!transferModalRefs?.root) {
       return;
     }
@@ -696,6 +739,10 @@
   }
 
   async function openTransferModal() {
+    if (transferInProgress) {
+      return;
+    }
+
     ensureTransferModal();
     await restoreTransferFormValues();
     setTransferStatus("");
@@ -712,7 +759,7 @@
   }
 
   async function handleTransferSubmit() {
-    if (!transferModalRefs) {
+    if (!transferModalRefs || transferInProgress) {
       return;
     }
 
@@ -740,6 +787,7 @@
     }
 
     transferModalRefs.transferBtn.disabled = true;
+    setTransferLoading(true);
     setTransferStatus("Processando dados e atualizando o sistema de ponto...");
 
     try {
@@ -774,6 +822,7 @@
     } catch (error) {
       setTransferStatus(error?.message || "Erro inesperado.", "error");
     } finally {
+      setTransferLoading(false);
       transferModalRefs.transferBtn.disabled = false;
     }
   }
@@ -849,16 +898,22 @@
     transferModalRefs.transferBtn?.addEventListener("click", handleTransferSubmit);
 
     root.addEventListener("click", (event) => {
-      if (event.target === root) {
+      if (event.target === root && !transferInProgress) {
         closeTransferModal();
       }
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && transferModalRefs?.root?.classList.contains("is-open")) {
+      if (
+        event.key === "Escape" &&
+        transferModalRefs?.root?.classList.contains("is-open") &&
+        !transferInProgress
+      ) {
         closeTransferModal();
       }
     });
+
+    ensureTransferLoadingOverlay();
 
     return transferModalRefs;
   }
