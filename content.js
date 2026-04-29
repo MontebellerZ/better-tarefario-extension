@@ -57,6 +57,7 @@
   let apontamentosObserver;
   let transferModalRefs;
   let transferInProgress = false;
+  let routeListenersAttached = false;
 
   function readSavedTab() {
     const savedTab = window.localStorage.getItem(STORAGE_KEY);
@@ -584,6 +585,43 @@
     resizeListenerAttached = true;
   }
 
+  function startRouteListeners() {
+    if (routeListenersAttached) {
+      return;
+    }
+
+    const notifyRouteChange = () => {
+      window.dispatchEvent(new Event("better-tarefario-routechange"));
+    };
+
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function patchedPushState(...args) {
+      const result = originalPushState.apply(this, args);
+      notifyRouteChange();
+      return result;
+    };
+
+    window.history.replaceState = function patchedReplaceState(...args) {
+      const result = originalReplaceState.apply(this, args);
+      notifyRouteChange();
+      return result;
+    };
+
+    window.addEventListener("popstate", notifyRouteChange);
+    window.addEventListener("better-tarefario-routechange", () => {
+      if (isApontamentosPage()) {
+        bootstrapApontamentos();
+        return;
+      }
+
+      scheduleRefresh();
+    });
+
+    routeListenersAttached = true;
+  }
+
   function isApontamentosPage() {
     return window.location.pathname.startsWith(APONTAMENTOS_PATH_PREFIX);
   }
@@ -983,10 +1021,15 @@
   }
 
   function bootstrap(attempt = 0) {
+    startObserver();
+    startResizeListener();
+
+    if (isApontamentosPage()) {
+      return;
+    }
+
     if (ensureTabsRoot()) {
       applyCardFilter();
-      startObserver();
-      startResizeListener();
       return;
     }
 
@@ -995,10 +1038,7 @@
     }
   }
 
-  if (isApontamentosPage()) {
-    bootstrapApontamentos();
-    return;
-  }
-
+  startRouteListeners();
   bootstrap();
+  bootstrapApontamentos();
 })();
