@@ -558,6 +558,29 @@
     });
   }
 
+  function isRelevantCardsMutation(mutation) {
+    if (mutation.type !== "childList") {
+      return false;
+    }
+
+    const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+    if (!changedNodes.length) {
+      return false;
+    }
+
+    return changedNodes.some((node) => {
+      if (!(node instanceof Element)) {
+        return false;
+      }
+
+      if (node.id === ROOT_ID || node.matches(GRID_SELECTOR) || node.matches(CARD_SELECTOR)) {
+        return true;
+      }
+
+      return Boolean(node.querySelector(`#${ROOT_ID}, ${GRID_SELECTOR}, ${CARD_SELECTOR}`));
+    });
+  }
+
   function startObserver() {
     if (observer) {
       observer.disconnect();
@@ -565,7 +588,7 @@
 
     observer = new MutationObserver((mutationList) => {
       for (const mutation of mutationList) {
-        if (mutation.type === "childList") {
+        if (isRelevantCardsMutation(mutation)) {
           scheduleRefresh();
           break;
         }
@@ -600,11 +623,15 @@
     currentRouteKey = nextRouteKey;
 
     if (isApontamentosPage()) {
+      if (observer) {
+        observer.disconnect();
+      }
+
       bootstrapApontamentos();
       return;
     }
 
-    scheduleRefresh();
+    bootstrap();
   }
 
   function startRouteListeners() {
@@ -1046,12 +1073,17 @@
   }
 
   function bootstrap(attempt = 0) {
-    startObserver();
     startResizeListener();
 
     if (isApontamentosPage()) {
+      if (observer) {
+        observer.disconnect();
+      }
+
       return;
     }
+
+    startObserver();
 
     if (ensureTabsRoot()) {
       applyCardFilter();
