@@ -154,6 +154,24 @@
     return badgeText.includes("code review");
   }
 
+  function isInProgressCard(card) {
+    const badge = card.querySelector(BADGE_SELECTOR);
+    if (!badge) {
+      return false;
+    }
+
+    if (badge.classList.contains("status-in-progress")) {
+      return true;
+    }
+
+    const normalizedBadgeText = (badge.textContent || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return normalizedBadgeText.includes("em andamento");
+  }
+
   function shouldShowCard(card) {
     if (activeTab === TAB_OCULTOS) {
       return isCardHidden(card);
@@ -458,9 +476,14 @@
       .map((card, index) => ({
         card,
         index,
+        inProgressOrder: isInProgressCard(card) ? 0 : 1,
         priority: getPriorityValue(card)
       }))
       .sort((left, right) => {
+        if (left.inProgressOrder !== right.inProgressOrder) {
+          return left.inProgressOrder - right.inProgressOrder;
+        }
+
         if (left.priority !== right.priority) {
           return left.priority - right.priority;
         }
